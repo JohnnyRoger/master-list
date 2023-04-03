@@ -1,0 +1,62 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet filter {
+          chain input {
+    type filter hook input priority 0; policy drop;
+
+    # Allow established connections
+    ct state established accept
+
+    # Allow traffic to and from localhost
+    iif lo accept
+    oif lo accept
+
+    # Allow HTTPS traffic
+    tcp dport https accept
+
+    # Block Slowloris attack
+    tcp flags & (fin|syn|rst|ack) == syn tcp option maxseg size 0 counter drop
+    tcp flags & (fin|syn|rst|ack) == syn tcp option maxseg size 128-65535 meter slowloris { ip saddr timeout 5m limit rate over 10/minute } drop
+
+    # Block Xerxes DDoS attack
+    tcp flags & (fin|syn|rst|ack) == syn tcp option maxseg size 0 meter xerxes { ip saddr timeout 1m limit rate over 20/minute } drop
+
+    # Block SYN flood
+    tcp flags & (fin | syn | rst | ack | urg | psh) == syn limit rate over 10/second burst 5 packets drop
+
+    # Block UDP flood
+    #udp limit rate over 10/second burst 5 packets drop
+
+    # Block HTTP flood
+    #tcp dport http limit rate over 10/second burst 5 packets drop
+
+    # Block DNS amplification attack
+    #udp dport domain limit rate over 50/second burst 10 packets { ip saddr . tcp dport ssh } counter drop
+
+    # Block NTP amplification attack
+    #udp dport ntp limit rate over 50/second burst 10 packets { ip saddr . tcp dport ssh } counter drop
+
+    # Block SSDP amplification attack
+    #udp dport 1900 limit rate over 50/second burst 10 packets { ip saddr . tcp dport ssh } counter drop
+
+    # Block TCP SYN-ACK reflection attack
+    #tcp flags syn,ack limit rate over 50/second burst 10 packets { ip saddr . tcp dport ssh } counter drop
+
+
+    # Allow other traffic
+    ct state related accept
+    tcp dport ssh accept
+    tcp dport http accept
+    udp dport domain accept
+
+    # Allow api traffic temporary
+    tcp dport 8000 accept
+    tcp dport 2000 accept
+
+    # Log and drop all other traffic
+    log prefix "DROP " level debug
+    drop
+  }
+}
