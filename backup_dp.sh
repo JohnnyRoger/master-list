@@ -33,7 +33,8 @@ if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     done
 fi
 
-#IMPORTANT 
+#IMPORTANT
+#Create Internal & External Backup Directory first
 #Make executable
 # execute - chmod +x backup_db.sh
 # run - ./backup_db.sh
