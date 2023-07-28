@@ -33,3 +33,7 @@ if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     done
 fi
 
+#IMPORTANT 
+#Make executable
+# execute - chmod +x backup_db.sh
+# run - ./backup_db.sh
